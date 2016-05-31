@@ -1,16 +1,25 @@
 chrome.runtime.onMessage.addListener(
 function(request, sender, sendResponse) {
   if (request.gold) {
-    const answer = searchForText(request.gold);
-    sendResponse({answer: answer});
+    sendResponse(searchForText(request.gold));
   }
 });
 function searchForText(gold) {
   var words = document.querySelectorAll('span');
-  for (var i = 0; i<words.length;i++)
-    if (words[i].innerText.indexOf(gold.keywords) != -1)
-      return findAnswer(words[i]);
-  return false;
+  for (var i = 0; i<words.length;i++) {
+    const alphanumGold = gold.keywords.toUpperCase().replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/gi, '');
+    const alphanumWord = words[i].innerText.toUpperCase().replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/gi, '');
+    if (alphanumWord.indexOf(alphanumGold) != -1) {
+      return {
+        question: words[i].innerText,
+        answer: findAnswer(words[i])
+      };
+    }
+  }
+  return {
+    question: false,
+    answer: false
+  }
 }
 function findAnswer(ore) {
   const rootOre = ore;
@@ -19,6 +28,7 @@ function findAnswer(ore) {
     const answer = getAnswerInChildren(ore, rootOre);
     if (answer) return answer.innerText;
   }
+  return false;
 }
 function getAnswerInChildren(ore, rootOre) {
   if (ore.children.length == 0)

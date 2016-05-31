@@ -44,29 +44,50 @@ function waitForOre(req) {
     panTheGold(req);
   }, 10);
 }
-//now find the best match
+//now find the best match by ranking them
+//gold ore is always in the form of:
+/*{
+ *  url: string
+ *  keywords: string
+ *}
+*/
 function panTheGold(req) {
   const ore = document.body.querySelectorAll('h3 a');
   if (ore.length == 0) throw "no links found."
-  var bestNode = ore[0];
-  var keywords = '';
+  const golds = [];
   for (var i=0; i<ore.length; i++) {
-    const bold = findBold(ore[i]);
-    for (var j=0; j<bold.length; j++) {
-      if (bold[j].split(' ').length > keywords.split(' ').length) {
-        keywords = bold[j];
-        bestNode = ore[i];
-        break;
-      }
+    const bolds = findBold(ore[i]);
+    const keywords = findBestKeywords(bolds);
+    console.log(bolds);
+    const refinedOre = {
+      url: ore[i].href,
+      keywords: keywords
     }
+    insertSorted(golds,refinedOre);
   }
   sendResponse({
     question: req.question,
-    keywords: keywords,
-    url: bestNode.href
+    golds: golds
   });
 }
-function sendResponse(gold) {
-  console.log(gold);
-  chrome.runtime.sendMessage({gold: gold});
+function findBestKeywords(bolds) {
+  var max = '';
+  for (var i=0;i<bolds.length;i++)
+    if (bolds[i].length > max.length)
+      max = bolds[i];
+  return max;
+}
+function insertSorted(golds,refinedOre) {
+  if (golds.length == 0)
+    golds.push(refinedOre);
+  for (var i=0; i<golds.length;i++) {
+    if (golds[i].keywords.length <= refinedOre.keywords.length) {
+      golds = golds.splice(i,0,refinedOre);
+      return;
+    }
+  }
+}
+function sendResponse(googleGold) {
+  console.log(googleGold);
+  chrome.runtime.sendMessage({googleGold: googleGold});
 }
