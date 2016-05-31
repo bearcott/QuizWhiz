@@ -1,11 +1,12 @@
 {
   "manifest_version" : 2,
   "name" : "FUCK U GOVT",
-  "version" : "1.2",
+  "version" : "1.3",
   "description" : "Takes answers from quizlet and plugs them into document",
   "icons" : {"16" : "lmao.png", "48" : "lmao.png", "128" : "lmao.png"},
   "permissions" : [
     "tabs",
+    "storage",
     "https://*/*",
     "http://*/*",
     "file://*/"

@@ -66,6 +66,7 @@ function panTheGold(req) {
     insertSorted(golds,refinedOre);
   }
   sendResponse({
+    id: req.id,
     question: req.question,
     golds: golds
   });

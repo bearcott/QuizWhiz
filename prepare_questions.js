@@ -5,6 +5,7 @@ function findAnswer(el) {
   }
   return el.innerText;
 }
+question_id = 0;
 function findQuestion(el) {
   var text = "";
   var size = 0;
@@ -21,41 +22,48 @@ function findQuestion(el) {
       counter++;
     }
   }
-  return text;
+  if (!el.dataset.questionId) {
+    el.style.outline = "3px dotted yellow";
+    el.setAttribute('data-question-id',question_id);
+  }
+  return {
+    id: question_id++,
+    text: text
+  }
 }
-function appendElement(results,question,answer,id) {
+function appendElement(results,question,answer) {
   for (var i=0; i<results.length;i++) {
-    if (question == results[i].question) {
-      results[i].answers.push({
-        id: id,
-        text: answer
-      })
+    if (question.text == results[i].question) {
+      results[i].answers.push(answer)
       return;
     }
   }
   results.push({
-    question: question,
-    answers: [{
-      id: id,
-      text: answer
-    }]
+    id: question.id,
+    question: question.text,
+    answers: [answer]
   });
   return;
 }
 
-const answerButtons = document.querySelectorAll('input[type="radio"]');
-var results = []; //initialize array of results
+answerButtons = document.querySelectorAll('input[type="radio"]');
+results = []; //initialize array of results
 
 for (var i=0; i<answerButtons.length; i++) {
   answerButtons[i].setAttribute('data-answer-id',i)
-  const answer = findAnswer(answerButtons[i]);
+  const answer = {
+    id: i,
+    text: findAnswer(answerButtons[i])
+  }
   const question = findQuestion(answerButtons[i]);
-  appendElement(results,question,answer,i);
+
+  appendElement(results,question,answer);
 }
 
 /* RESULTS FORMAT
   [
     {
+      id: int, //unique id for data-question-id
       question: string,
       answers: [
         {

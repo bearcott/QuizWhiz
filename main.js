@@ -1,28 +1,45 @@
-function initializePage() {
-  //insert styles
-  // chrome.tabs.insertCSS({
-  //   file: "styles.css",
-  //   // allFrames: true //all frames
-  // });
-  //find questions using pattern of text->radio buttons
-  grabQuestions();
+function getUrl() {
+  return new Promise((res)=> {
+    chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
+      res(tabs[0].url);
+    });
+  })
 }
-var questionsObj;
-function grabQuestions() {
-  chrome.tabs.executeScript({file:"grab_questions.js"}, function(d) {
-    questionsObj = d[0];
-    console.log(d[0]);
-    runSearchGoogle();
+//grab the data questions and all from page and store
+function prepareQuestions() {
+  return new Promise((res)=>{
+    console.log('Grabbing data and preparing page..');
+    chrome.tabs.executeScript({file:"prepare_questions.js"}, function(data) {
+      getUrl().then((url)=> {
+        chrome.storage.local.get('questions',(items)=>{
+          if (items.questions.url && url !== items.questions.url)
+            items.questions = {} //reset the object;
+          items.questions.url = url;
+          items.questions.data = data[0];
+          chrome.storage.local.set({questions:items.questions});
+          res(items.questions);
+        })
+      });
+    });
   });
 }
-var COUNTER = 0;//lazylazylazylazy ://///////
-function runSearchGoogle() {
-  if (COUNTER >= questionsObj.length) {
-    console.log('\ndone bruh.');
-    return;
-  }
-  console.log(COUNTER+'. Searching question: '+questionsObj[COUNTER].question);
-  searchGoogle(questionsObj[COUNTER++]);
+function runSearchGoogle(questions) {
+  console.log(questions);
+  return new Promise((res)=> {
+    var counter = 0;
+    if (questions.google_counter) counter = questions.google_counter;
+    questionsObj = questions.data;
+
+    if (counter >= questionsObj.length) {
+      console.log('\ndone bruh.');
+      return;
+    }
+    console.log(counter+'. Searching question: '+questionsObj[counter].question);
+    searchGoogle(questionsObj[counter++]);
+    questions.google_counter = counter;
+    chrome.storage.local.set({questions:questions});
+    res(questions);
+  })
 }
 function searchGoogle(questionsObj) {
   // TODO: possibly a xss attack? double check bruh
@@ -35,10 +52,14 @@ function searchGoogle(questionsObj) {
       allFrames: true,
       runAt:"document_idle"
     },()=>{
-      chrome.tabs.sendMessage(tab.id, {question: questionsObj.question});
+      chrome.tabs.sendMessage(tab.id, {
+        id: questionsObj.id,
+        question: questionsObj.question
+      });
     });
   })
 }
+//listen for the google result
 chrome.runtime.onMessage.addListener(
 function(request, sender, sendResponse) {
   if (request.googleGold) {
@@ -52,7 +73,8 @@ function runSearchQuizlet(googleGold) {
   if (QUIZLET_COUNTER >= 5 || QUIZLET_COUNTER >= googleGold.golds.length) { //quit after fifth attempt or when shit goes up
     console.log('exhausted all searches. skipping to next question');
     QUIZLET_COUNTER = 0;
-    runSearchGoogle();
+    flagQuestion(googleGold.id, false);
+    // runSearchGoogle();
     return;
   }
   searchQuizlet(googleGold, QUIZLET_COUNTER++);
@@ -94,14 +116,15 @@ function searchQuizlet(googleGold, counter) {
           return;
         }
         QUIZLET_COUNTER = 0;
-        runSearchGoogle(); //DO THE NEXT QUESTION :DD
+        // runSearchGoogle(); //DO THE NEXT QUESTION :DD
+        console.log('got answer: '+googleGold.answer);
+        flagQuestion(googleGold.id, true);
         recordEzPzAnswer(answerId);
       });
     });
   });
 }
 function checkChoices(gold) {
-  console.log(gold.answer);
   //parse the right answer
   var question = gold.question;
   var answerId = null;
@@ -126,6 +149,17 @@ function checkChoices(gold) {
   }
   return answerId;
 }
+function flagQuestion(questionId, success) {
+  chrome.tabs.executeScript({file:"mark_question.js", allFrames: true}, function(d) {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      console.log('PLS!');
+      chrome.tabs.sendMessage(tabs[0].id,{
+        questionId: questionId,
+        success: success
+      });
+    });
+  });
+}
 function recordEzPzAnswer(answerId) {
   chrome.tabs.executeScript({file:"record_ezpz_answer.js"}, function(d) {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -137,4 +171,4 @@ function recordEzPzAnswer(answerId) {
   });
 }
 
-initializePage();
+prepareQuestions().then(runSearchGoogle);
