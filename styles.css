@@ -1,0 +1,28 @@
+body {
+  color: #444;
+}
+.popup {
+  width: 300px;
+}
+.total .visual .question {
+  width: 10px;
+  height: 10px;
+  border: 4px solid peachpuff;
+  border-radius: 100%;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+.log .content {
+  max-height: 300px;
+  overflow-y: scroll;
+  /*border: 2px solid #ddd;*/
+  background: #fafafa;
+}
+.log .content p {
+  margin: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eee;
+}
+.log .content p:last-child {
+  border-bottom: none;
+}

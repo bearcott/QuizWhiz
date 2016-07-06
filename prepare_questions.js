@@ -23,7 +23,7 @@ function findQuestion(el) {
     }
   }
   if (!el.dataset.questionId) {
-    el.style.outline = "3px dotted yellow";
+    el.style.outline = "3px dotted peachpuff";
     el.setAttribute('data-question-id',question_id);
   }
   return {
